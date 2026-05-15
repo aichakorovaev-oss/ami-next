@@ -6,3 +6,9 @@ const nextConfig = {
   },
 };
 module.exports = nextConfig;
+const nextConfig = {
+  experimental: {
+    serverComponentsExternalPackages: [],
+  },
+};
+module.exports = nextConfig;

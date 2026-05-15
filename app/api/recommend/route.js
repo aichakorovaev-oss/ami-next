@@ -2,6 +2,8 @@
 // Full Ami pipeline: safety → psychologist → librarian → AI Studio (Gemma 4)
 
 import { NextResponse } from "next/server";
+import catalogue  from "../../../data/ami_catalogue.json";
+import anecdotes  from "../../../data/ami_anecdotes.json";
 
 const MODEL = "gemma-4-31b-it";
 const AI_STUDIO_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
@@ -81,28 +83,21 @@ function extractJson(text) {
 // ── Catalogue loader (cached in module scope) ─────────────────────────
 let _catalogue = null;
 
-async function getCatalogue() {
+function getCatalogue() {
   if (_catalogue) return _catalogue;
-
-  const fs   = (await import("fs")).default;
-  const path = (await import("path")).default;
-
-  const dataDir = path.join(process.cwd(), "data");
-  const cat  = JSON.parse(fs.readFileSync(path.join(dataDir, "ami_catalogue.json"),  "utf8"));
-  const anec = JSON.parse(fs.readFileSync(path.join(dataDir, "ami_anecdotes.json"), "utf8"));
 
   const seenIds = new Set();
   const allItems = [];
 
   for (const key of ["films", "series", "novels"]) {
-    for (const item of cat[key] || []) {
+    for (const item of catalogue[key] || []) {
       if (item.id && !seenIds.has(item.id)) {
         seenIds.add(item.id);
         allItems.push(item);
       }
     }
   }
-  for (const item of anec.anecdotes || []) {
+  for (const item of anecdotes.anecdotes || []) {
     if (item.id && !seenIds.has(item.id)) {
       seenIds.add(item.id);
       allItems.push(item);
@@ -110,7 +105,7 @@ async function getCatalogue() {
   }
 
   const itemsById = Object.fromEntries(allItems.map(i => [i.id, i]));
-  const papers    = cat?.meta?.papers || [];
+  const papers    = catalogue?.meta?.papers || [];
 
   const counts = {};
   for (const i of allItems) if (i.mechanism) counts[i.mechanism] = (counts[i.mechanism] || 0) + 1;
@@ -126,7 +121,7 @@ async function getCatalogue() {
     `- "${p.id}": ${p.mechanism} (${tag(counts[p.id] || 0)}) — ${(p.description || "").slice(0, 150)}`
   ).join("\n");
 
-  const moods = cat?.meta?.moods?.map(m => m.key) || [
+  const moods = catalogue?.meta?.moods?.map(m => m.key) || [
     "overwhelmed","anxious","sad","angry","exhausted","lonely","empty","lost",
     "guilty","ashamed","discouraged","bored","nostalgic","grieving","melancholic",
     "cynical","doubtful","confused","restless","self_angry","envious",
@@ -136,7 +131,6 @@ async function getCatalogue() {
   _catalogue = { allItems, itemsById, papers, mechanismBlock, moodListStr: moods.join(", ") };
   return _catalogue;
 }
-
 // ── Safety ────────────────────────────────────────────────────────────
 const CRISIS_RE = [
   /\b(kill|killing)\s+myself\b/i,

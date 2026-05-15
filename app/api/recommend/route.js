@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 import catalogue  from "../../../data/ami_catalogue.json";
 import anecdotes  from "../../../data/ami_anecdotes.json";
 
-const MODEL = "gemma-4-31b-it";
+const MODEL = "gemma-2.0-flash";
 const AI_STUDIO_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
 // ── AI Studio call ────────────────────────────────────────────────────

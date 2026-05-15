@@ -24,9 +24,6 @@ async function gemmaCall(prompt, { maxTokens = 400, temperature = 0.75 } = {}) {
         topP: 0.95,
         topK: 64,
       },
-      thinkingConfig: {
-        thinkingBudget: 0,
-      },
     }),
   });
 
@@ -76,9 +73,6 @@ async function gemmaVisionCall(imageB64, prompt, { maxTokens = 300, temperature 
         temperature,
         topP: 0.95,
         topK: 64,
-      },
-      thinkingConfig: {
-        thinkingBudget: 0,
       },
     }),
   });

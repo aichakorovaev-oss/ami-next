@@ -18,7 +18,15 @@ async function gemmaCall(prompt, { maxTokens = 400, temperature = 0.75 } = {}) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: { maxOutputTokens: maxTokens, temperature, topP: 0.92 },
+      generationConfig: {
+        maxOutputTokens: maxTokens,
+        temperature,
+        topP: 0.95,
+        topK: 64,
+      },
+      thinkingConfig: {
+        thinkingBudget: 0,
+      },
     }),
   });
 
@@ -29,6 +37,11 @@ async function gemmaCall(prompt, { maxTokens = 400, temperature = 0.75 } = {}) {
 
   const data = await res.json();
   let text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+  // Gemma thinking models sometimes return thought + answer in separate parts
+  if (!text) {
+    const parts = data?.candidates?.[0]?.content?.parts || [];
+    text = parts.find(p => p.text && !p.thought)?.text ?? "";
+  }
   text = text.replace(/^```json\s*/m, "").replace(/```\s*$/m, "").trim();
   return text;
 }
@@ -37,7 +50,6 @@ async function gemmaVisionCall(imageB64, prompt, { maxTokens = 300, temperature 
   const key = process.env.GOOGLE_AI_STUDIO_KEY;
   if (!key) throw new Error("GOOGLE_AI_STUDIO_KEY is not set");
 
-  // Strip data URL prefix and detect MIME
   let mime = "image/jpeg";
   let rawB64 = imageB64;
   if (imageB64.includes(",") && imageB64.startsWith("data:")) {
@@ -59,7 +71,15 @@ async function gemmaVisionCall(imageB64, prompt, { maxTokens = 300, temperature 
           { text: prompt },
         ],
       }],
-      generationConfig: { maxOutputTokens: maxTokens, temperature, topP: 0.9 },
+      generationConfig: {
+        maxOutputTokens: maxTokens,
+        temperature,
+        topP: 0.95,
+        topK: 64,
+      },
+      thinkingConfig: {
+        thinkingBudget: 0,
+      },
     }),
   });
 
@@ -70,10 +90,13 @@ async function gemmaVisionCall(imageB64, prompt, { maxTokens = 300, temperature 
 
   const data = await res.json();
   let text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+  if (!text) {
+    const parts = data?.candidates?.[0]?.content?.parts || [];
+    text = parts.find(p => p.text && !p.thought)?.text ?? "";
+  }
   text = text.replace(/^```json\s*/m, "").replace(/```\s*$/m, "").trim();
   return text;
 }
-
 function extractJson(text) {
   const match = text.match(/\{[\s\S]*\}/);
   if (!match) return null;
